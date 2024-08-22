@@ -52,7 +52,7 @@ app.post("/saveuser/",async(request,response) =>{
 
 
 app.post("/booking/",async(request,response) =>{
-  const {booking_id,student_id,mentor_availability,mentor_id} = request.body
+  const {booking_id,student_id,mentor_availability,duration,mentor_id} = request.body
     try{
       const setMentor = 'UPDATE mentor SET mentor_availability = ? WHERE mentor_id = ?;'
       await database.run(setMentor,[mentor_availability,mentor_id])
@@ -70,7 +70,7 @@ app.post("/booking/",async(request,response) =>{
 app.get("/mentor/", async(request,response) =>{
   const {area_of_expertise} = request.query
 try{
-  const getmentors = `SELECT * FROM mentor WHERE area_of_expertise = ? ORDER BY feedback ASC;`
+  const getmentors = `SELECT * FROM mentor WHERE area_of_expertise = ? ORDER BY feedback DESC;`
   const mentorDetails = await database.all(getmentors,[area_of_expertise])
   console.log(mentorDetails)
   return response.status(200).send(mentorDetails)
