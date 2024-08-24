@@ -1,14 +1,18 @@
 const express = require("express");
 const path = require("path");
+const cors = require('cors');
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
+const dotenv = require('dotenv');
 
 
+dotenv.config();
 const app = express();
 app.use(express.json());
-
+app.use(cors());
 const dbPath = path.join(__dirname, "database.db");
 let database = null
+const port = process.env.PORT || 8000;
 
 const initializeDbAndServer = async () => {
   try {
@@ -17,8 +21,8 @@ const initializeDbAndServer = async () => {
       driver: sqlite3.Database,
     });
 
-    app.listen(3004, () => {
-      console.log("Server Running at http://localhost:3004/");
+    app.listen(port, () => {
+      console.log("Server Running at http://localhost:3005/");
     });
   } catch (error) {
     console.log(`DB Error : ${error.message}`);
@@ -29,23 +33,23 @@ initializeDbAndServer();
 
 
 app.post("/saveuser/",async(request,response) =>{
-  const {name,student_id,phonenumber,area_of_interest,eamil,availability,mentor_name,mentor_availability} = request.body
+  const {name,phonenumber,area_of_interest,email} = request.body
 
-  const getUser = `SELECT * FROM student WHERE name = ? AND slot_booked = 'yes' AND student_id = ? ;`;
-  const checktheUser = await database.get(getUser, [name,student_id]);
-
+  try{
+  const getUser = `SELECT * FROM students WHERE name = ? AND email = ? ;`;
+  const checktheUser = await database.get(getUser, [name,email]);
   if (checktheUser) {
       console.log('User has already booked a slot');
       return response.status(400).json({ message: "User has already booked a slot" });
   } else {
-      const setStudent = `INSERT INTO student VALUES('${student_id}','${name}','${availability}','${area_of_interest}','${phonenumber}','${eamil}','yes');`
-      const setMentor = 'UPDATE mentor SET mentor_availability = ? WHERE mentor_name = ?;'
-
+      const setStudent = `INSERT INTO students(name, area_of_interest, phonenumber, email) VALUES('${name}','${area_of_interest}','${phonenumber}','${email}');`
       await database.run(setStudent)
-      await database.run(setMentor,[mentor_availability,mentor_name])
-      console.log("user added")
+      console.log(request.body)
       return response.status(201).json({ message: "user added" });
-
+  }
+  }
+  catch(error){
+    return response.status(500).json({message: error})
   }
 
 });
@@ -72,11 +76,11 @@ app.get("/mentor/", async(request,response) =>{
 try{
   const getmentors = `SELECT * FROM mentor WHERE area_of_expertise = ? ORDER BY feedback DESC;`
   const mentorDetails = await database.all(getmentors,[area_of_expertise])
-  console.log(mentorDetails)
+  console.log(area_of_expertise)
   return response.status(200).send(mentorDetails)
 }
 catch(error){
   console.error(error)
-  return response.status(400).json({message: "failed"})
+  return response.status(400).json({message: error})
 }
 });
